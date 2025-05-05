@@ -1,0 +1,142 @@
+{% extends 'dds_management/base.html' %}
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5>{% if form.instance.pk %}Редактирование{% else %}Создание{% endif %} транзакции</h5>
+    </div>
+    <div class="card-body">
+        {% if form.errors or error_message %}
+        <div class="alert alert-danger">
+            <strong>Ошибка!</strong> 
+            {% if error_message %}{{ error_message }}{% else %}Проверьте правильность введенных данных{% endif %}
+            {% if form.non_field_errors %}
+                <ul>
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            
+            <!-- Поле даты с обработкой ошибок -->
+            <div class="mb-3 {% if form.date.errors %}has-error{% endif %}">
+                <label for="{{ form.date.id_for_label }}" class="form-label">Дата</label>
+                {{ form.date }}
+                {% if form.date.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.date.errors|join:", " }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Поля типа операции и статуса -->
+            <div class="row mb-3">
+                <div class="col-md-6 {% if form.transaction_type.errors %}has-error{% endif %}">
+                    <label for="{{ form.transaction_type.id_for_label }}" class="form-label">Тип операции</label>
+                    {{ form.transaction_type }}
+                    {% if form.transaction_type.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.transaction_type.errors|join:", " }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6 {% if form.status.errors %}has-error{% endif %}">
+                    <label for="{{ form.status.id_for_label }}" class="form-label">Статус</label>
+                    {{ form.status }}
+                    {% if form.status.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.status.errors|join:", " }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Поля категории и подкатегории с обработкой ошибок -->
+            <div class="row mb-3">
+                <div class="col-md-6 {% if form.category.errors %}has-error{% endif %}">
+                    <label for="{{ form.category.id_for_label }}" class="form-label">Категория</label>
+                    {{ form.category }}
+                    {% if form.category.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.category.errors|join:", " }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6 {% if form.subcategory.errors %}has-error{% endif %}">
+                    <label for="{{ form.subcategory.id_for_label }}" class="form-label">Подкатегория</label>
+                    {{ form.subcategory }}
+                    {% if form.subcategory.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.subcategory.errors|join:", " }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Остальные поля формы -->
+            <div class="mb-3 {% if form.amount.errors %}has-error{% endif %}">
+                <label for="{{ form.amount.id_for_label }}" class="form-label">Сумма (₽)</label>
+                {{ form.amount }}
+                {% if form.amount.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.amount.errors|join:", " }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                <label for="{{ form.comment.id_for_label }}" class="form-label">Комментарий</label>
+                {{ form.comment }}
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{% url 'dds_management:transaction_list' %}" class="btn btn-secondary me-md-2">Отмена</a>
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Подсветка неверных полей
+document.addEventListener('DOMContentLoaded', function() {
+    {% if form.errors %}
+        {% for field in form %}
+            {% if field.errors %}
+                document.getElementById('{{ field.id_for_label }}').classList.add('is-invalid');
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+    
+    // Динамическая загрузка подкатегорий
+    document.getElementById('id_category').addEventListener('change', function() {
+        const categoryId = this.value;
+        if (!categoryId) return;
+        
+        fetch(`/get_subcategories/?category_id=${categoryId}`)
+            .then(response => response.json())
+            .then(data => {
+                const subcategorySelect = document.getElementById('id_subcategory');
+                subcategorySelect.innerHTML = '';
+                
+                // Добавляем пустой вариант
+                const emptyOption = document.createElement('option');
+                emptyOption.value = '';
+                emptyOption.textContent = '---------';
+                subcategorySelect.appendChild(emptyOption);
+                
+                data.forEach(subcategory => {
+                    const option = document.createElement('option');
+                    option.value = subcategory.id;
+                    option.textContent = subcategory.name;
+                    subcategorySelect.appendChild(option);
+                });
+            });
+    });
+});
+</script>
+{% endblock %}

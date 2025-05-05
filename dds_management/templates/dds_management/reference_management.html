@@ -1,0 +1,186 @@
+{% extends 'dds_management/base.html' %}
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>Управление справочниками</h5>
+    </div>
+    <div class="card-body">
+        <ul class="nav nav-tabs" id="referenceTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="status-tab" data-bs-toggle="tab" data-bs-target="#status" type="button">Статусы</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="types-tab" data-bs-toggle="tab" data-bs-target="#types" type="button">Типы операций</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="categories-tab" data-bs-toggle="tab" data-bs-target="#categories" type="button">Категории</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="subcategories-tab" data-bs-toggle="tab" data-bs-target="#subcategories" type="button">Подкатегории</button>
+            </li>
+        </ul>
+        
+        <div class="tab-content p-3 border border-top-0 rounded-bottom">
+            <!-- Вкладка статусов -->
+            <div class="tab-pane fade show active" id="status" role="tabpanel">
+                <form method="post" action="{% url 'dds_management:reference_add' model_name='status' %}">
+                    {% csrf_token %}
+                    <div class="input-group mb-3">
+                        <input type="text" name="name" class="form-control" placeholder="Новый статус" required>
+                        <button class="btn btn-success" type="submit">Добавить</button>
+                    </div>
+                </form>
+                
+                <table class="table table-sm">
+                    {% for status in statuses %}
+                    <tr>
+                        <td>{{ status.name }}</td>
+                        <td class="text-end">
+                            <form action="{% url 'dds_management:reference_delete' model_name='status' pk=status.pk %}" method="post" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Удалить</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+
+            <!-- Вкладка типов операций -->
+            <div class="tab-pane fade" id="types" role="tabpanel">
+                <form method="post" action="{% url 'dds_management:reference_add' model_name='transactiontype' %}">
+                    {% csrf_token %}
+                    <div class="input-group mb-3">
+                        <input type="text" name="name" class="form-control" placeholder="Новый тип операции" required>
+                        <button class="btn btn-success" type="submit">Добавить</button>
+                    </div>
+                </form>
+                
+                <table class="table table-sm">
+                    {% for type in transaction_types %}
+                    <tr>
+                        <td>{{ type.name }}</td>
+                        <td class="text-end">
+                            <form action="{% url 'dds_management:reference_delete' model_name='transactiontype' pk=type.pk %}" method="post" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Удалить</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+
+            <!-- Вкладка категорий -->
+            <div class="tab-pane fade" id="categories" role="tabpanel">
+                <form method="post" action="{% url 'dds_management:reference_add' model_name='category' %}">
+                    {% csrf_token %}
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <input type="text" name="name" class="form-control" placeholder="Название категории" required>
+                        </div>
+                        <div class="col-md-4">
+                            <select name="transaction_type" class="form-select" required>
+                                <option value="" selected disabled>Выберите тип операции</option>
+                                {% for type in transaction_types %}
+                                <option value="{{ type.pk }}">{{ type.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-success w-100" type="submit">Добавить</button>
+                        </div>
+                    </div>
+                </form>
+                
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>Тип операции</th>
+                            <th class="text-end">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category in categories %}
+                        <tr>
+                            <td>{{ category.name }}</td>
+                            <td>{{ category.transaction_type }}</td>
+                            <td class="text-end">
+                                <form action="{% url 'dds_management:reference_delete' model_name='category' pk=category.pk %}" method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Удалить</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Вкладка подкатегорий -->
+            <div class="tab-pane fade" id="subcategories" role="tabpanel">
+                <form method="post" action="{% url 'dds_management:reference_add' model_name='subcategory' %}">
+                    {% csrf_token %}
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-5">
+                            <input type="text" name="name" class="form-control" placeholder="Название подкатегории" required>
+                        </div>
+                        <div class="col-md-5">
+                            <select name="category" class="form-select" required>
+                                <option value="" selected disabled>Выберите категорию</option>
+                                {% for category in categories %}
+                                <option value="{{ category.pk }}">{{ category.name }} ({{ category.transaction_type }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-success w-100" type="submit">Добавить</button>
+                        </div>
+                    </div>
+                </form>
+                
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>Категория</th>
+                            <th>Тип операции</th>
+                            <th class="text-end">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for subcategory in subcategories %}
+                        <tr>
+                            <td>{{ subcategory.name }}</td>
+                            <td>{{ subcategory.category.name }}</td>
+                            <td>{{ subcategory.category.transaction_type }}</td>
+                            <td class="text-end">
+                                <form action="{% url 'dds_management:reference_delete' model_name='subcategory' pk=subcategory.pk %}" method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Удалить</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Активация табов при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    const tabElms = document.querySelectorAll('button[data-bs-toggle="tab"]');
+    tabElms.forEach(tabEl => {
+        tabEl.addEventListener('click', function(event) {
+            event.preventDefault();
+            const tab = new bootstrap.Tab(this);
+            tab.show();
+        });
+    });
+});
+</script>
+{% endblock %}

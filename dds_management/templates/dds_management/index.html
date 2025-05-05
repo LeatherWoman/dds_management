@@ -1,0 +1,171 @@
+{% extends 'dds_management/base.html' %}
+{% block content %}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="filter-form row g-3">
+            <!-- Фильтр по датам -->
+            <div class="col-md-2">
+                <label for="date_from" class="form-label">Дата от</label>
+                <input type="date" class="form-control" id="date_from" name="date_from" 
+                       value="{{ request.GET.date_from }}">
+            </div>
+            <div class="col-md-2">
+                <label for="date_to" class="form-label">Дата до</label>
+                <input type="date" class="form-control" id="date_to" name="date_to"
+                       value="{{ request.GET.date_to }}">
+            </div>
+
+            <!-- Фильтр по статусу -->
+            <div class="col-md-2">
+                <label for="status" class="form-label">Статус</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">Все статусы</option>
+                    {% for status in statuses %}
+                    <option value="{{ status.id }}" 
+                            {% if request.GET.status == status.id|stringformat:"s" %}selected{% endif %}>
+                        {{ status.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Фильтр по типу операции -->
+            <div class="col-md-2">
+                <label for="transaction_type" class="form-label">Тип операции</label>
+                <select class="form-select" id="transaction_type" name="transaction_type">
+                    <option value="">Все типы</option>
+                    {% for type in transaction_types %}
+                    <option value="{{ type.id }}"
+                            {% if request.GET.transaction_type == type.id|stringformat:"s" %}selected{% endif %}>
+                        {{ type.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Фильтр по категории -->
+            <div class="col-md-2">
+                <label for="category" class="form-label">Категория</label>
+                <select class="form-select" id="category" name="category">
+                    <option value="">Все категории</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}"
+                            {% if request.GET.category == category.id|stringformat:"s" %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Фильтр по подкатегории (динамически обновляется) -->
+            <div class="col-md-2">
+                <label for="subcategory" class="form-label">Подкатегория</label>
+                <select class="form-select" id="subcategory" name="subcategory">
+                    <option value="">Все подкатегории</option>
+                    {% if subcategories %}
+                        {% for subcategory in subcategories %}
+                        <option value="{{ subcategory.id }}"
+                                {% if request.GET.subcategory == subcategory.id|stringformat:"s" %}selected{% endif %}>
+                            {{ subcategory.name }}
+                        </option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+
+            <!-- Кнопки фильтрации и сброса -->
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">Применить</button>
+                <a href="{% url 'dds_management:transaction_list' %}" class="btn btn-outline-secondary">Сбросить</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5>Список транзакций</h5>
+        <a href="{% url 'dds_management:transaction_add' %}" class="btn btn-success btn-sm">Добавить</a>
+    </div>
+    <div class="card-body">
+        {% if transactions %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <!-- Заголовки таблицы -->
+                <thead>
+                    <tr>
+                        <th>Дата</th>
+                        <th>Тип</th>
+                        <th>Статус</th>
+                        <th>Категория</th>
+                        <th>Подкатегория</th>
+                        <th>Сумма</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                    <tr>
+                        <td>{{ transaction.date|date:"d.m.Y" }}</td>
+                        <td>{{ transaction.transaction_type }}</td>
+                        <td>{{ transaction.status }}</td>
+                        <td>{{ transaction.category }}</td>
+                        <td>{{ transaction.subcategory }}</td>
+                        <td>{{ transaction.amount }} ₽</td>
+                        <td>
+                            <a href="{% url 'dds_management:transaction_edit' pk=transaction.pk %}" 
+                               class="btn btn-sm btn-outline-primary">✏️</a>
+                            <form action="{% url 'dds_management:transaction_delete' pk=transaction.pk %}" 
+                                  method="post" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger">❌</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">Нет транзакций, соответствующих заданным фильтрам</div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Динамическая загрузка подкатегорий при изменении категории
+document.getElementById('category').addEventListener('change', function() {
+    const categoryId = this.value;
+    const subcategorySelect = document.getElementById('subcategory');
+    
+    if (!categoryId) {
+        subcategorySelect.innerHTML = '<option value="">Все подкатегории</option>';
+        return;
+    }
+    
+    fetch(`/get_subcategories/?category_id=${categoryId}`)
+        .then(response => response.json())
+        .then(data => {
+            let options = '<option value="">Все подкатегории</option>';
+            data.forEach(subcategory => {
+                options += `<option value="${subcategory.id}">${subcategory.name}</option>`;
+            });
+            subcategorySelect.innerHTML = options;
+            
+            // Восстановление выбранного значения после обновления
+            const selectedSubcategory = "{{ request.GET.subcategory }}";
+            if (selectedSubcategory) {
+                subcategorySelect.value = selectedSubcategory;
+            }
+        });
+});
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    const categorySelect = document.getElementById('category');
+    if (categorySelect.value) {
+        categorySelect.dispatchEvent(new Event('change'));
+    }
+});
+</script>
+{% endblock %}
